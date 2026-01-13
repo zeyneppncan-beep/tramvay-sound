@@ -1,126 +1,143 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tramvay – Hata Ayıklama V3</title>
+<title>IND338 Sound of Journey</title>
 <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js"></script>
 
 <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+    /* GENEL AYARLAR */
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
     
-    /* 3D Model Alanı */
-    #viewer { width: 100%; height: 100%; border: none; display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+    /* 3D MODEL ALANI */
+    #viewer { width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; z-index: 1; }
 
-    /* Başlangıç Ekranı (Siyah Perde) */
-    #startScreen {
+    /* GİRİŞ EKRANI (AÇILIŞ) */
+    #intro-screen {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background-color: black;
+        background-color: #111; /* Koyu Gri/Siyah */
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        z-index: 999999; /* En üstte olduğundan emin oluyoruz */
-    }
-
-    /* KOCAMAN BUTON */
-    #btnStart {
-        padding: 30px 60px;
-        font-size: 25px;
-        font-weight: bold;
-        background-color: #2ecc71; /* Yeşil */
+        z-index: 99999; /* En üstte */
         color: white;
-        border: 4px solid white;
-        cursor: pointer;
-        border-radius: 10px;
+        text-align: center;
+        transition: opacity 1s ease; /* Yavaşça kaybolma efekti */
     }
-    #btnStart:active { background-color: #27ae60; transform: scale(0.95); }
 
-    /* Bilgi Mesajı */
-    #status { color: white; margin-top: 20px; font-family: monospace; }
+    /* BAŞLIKLAR */
+    h1 {
+        font-size: 3rem; margin: 0 0 10px 0; letter-spacing: 2px; font-weight: 300;
+        text-transform: uppercase;
+    }
+    
+    h2 {
+        font-size: 1.2rem; margin: 0 0 40px 0; color: #888; font-weight: 400; letter-spacing: 1px;
+    }
+
+    /* YEŞİL HEAR BUTONU */
+    #btnHear {
+        padding: 15px 60px;
+        font-size: 24px;
+        font-weight: bold;
+        background-color: #27ae60; /* Yeşil Renk */
+        color: white;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        box-shadow: 0 0 20px rgba(39, 174, 96, 0.4);
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+    }
+
+    #btnHear:hover {
+        background-color: #2ecc71; /* Üzerine gelince açılan renk */
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(46, 204, 113, 0.6);
+    }
+
+    /* Yükleniyor yazısı */
+    #status { margin-top: 20px; font-size: 12px; color: #555; }
+
 </style>
 </head>
 <body>
 
-<div id="startScreen">
-    <button id="btnStart">BAŞLAT (TIKLA)</button>
-    <div id="status">Sistem hazır, tıklama bekleniyor...</div>
+<div id="intro-screen">
+    <h1>IND338 Sound of Journey</h1>
+    <h2>Zeynep Nur Can</h2>
+    <button id="btnHear">HEAR</button>
+    <div id="status">Experience loading...</div>
 </div>
 
 <iframe src="" id="viewer" allow="autoplay; fullscreen; vr" allowvr allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
 
 <script>
-    // === 1. GLOBAL HATA YAKALAYICI ===
-    // Sayfada bir kod hatası olursa hemen ekrana uyarı basar.
-    window.onerror = function(message, source, lineno, colno, error) {
-        alert("KOD HATASI OLUŞTU:\n" + message + "\nSatır: " + lineno);
-    };
-
-    // Değişkenler
-    var screen = document.getElementById("startScreen");
-    var btn = document.getElementById("btnStart");
+    // === DEĞİŞKENLER ===
+    var screen = document.getElementById("intro-screen");
+    var btn = document.getElementById("btnHear");
     var statusDiv = document.getElementById("status");
     var audioUnlocked = false;
     var sounds = [];
 
-    // === 2. SES DOSYALARI ===
-    // Dosya isimleri (Büyük/Küçük harfe dikkat!)
+    // === SES DOSYALARI (Lütfen dosya isimlerinin küçük harf olduğundan emin ol) ===
     var fileList = [
-        "sounds/trafik.mp3",      // 0
-        "sounds/tramvay_ic.mp3",  // 1
-        "sounds/tramvay_ray.mp3", // 2
-        "sounds/kapi.mp3",        // 3
-        "sounds/marti.mp3",       // 4
-        "sounds/nefes.mp3"        // 5
+        "sounds/trafik.mp3",      // No 1
+        "sounds/tramvay_ic.mp3",  // No 2
+        "sounds/tramvay_ray.mp3", // No 3
+        "sounds/kapi.mp3",        // No 4
+        "sounds/marti.mp3",       // No 5
+        "sounds/nefes.mp3"        // No 6
     ];
 
-    // Sesleri Yükle
-    fileList.forEach(function(src, index) {
+    // Sesleri hafızaya al
+    fileList.forEach(function(src) {
         var aud = new Audio(src);
         aud.loop = true;
         aud.volume = 1.0;
         sounds.push(aud);
     });
 
-    // === 3. BUTONA TIKLAMA OLAYI ===
+    // === HEAR BUTONUNA TIKLAMA ===
     btn.onclick = function() {
-        statusDiv.innerText = "Ses motoru başlatılıyor...";
+        statusDiv.innerText = "Audio Context Unlocking...";
         
-        // Ses kilidini açmayı dene
+        // Ses motorunu tetikle
         if(sounds[0]) {
             sounds[0].play().then(function() {
-                // Başarılı olursa:
+                // Başarılı ise durdur ve başa al
                 sounds[0].pause();
                 sounds[0].currentTime = 0;
                 audioUnlocked = true;
                 
-                // Ekranı kaldır
-                screen.style.display = "none";
-                console.log("Ses sistemi aktif.");
+                // Ekranı yavaşça kaybet
+                screen.style.opacity = "0";
+                setTimeout(function(){ screen.style.display = "none"; }, 1000);
+                
             }).catch(function(err) {
-                // Hata olursa:
-                alert("SES HATASI: Tarayıcı sesi engelledi veya dosya bulunamadı.\n" + err);
-                statusDiv.innerText = "HATA: " + err;
-                // Yine de ekranı kapat ki modeli görebilsin
-                setTimeout(function(){ screen.style.display = "none"; }, 2000);
+                // Hata varsa
+                alert("Audio Error: Please check sound files. \n" + err);
+                // Yine de ekranı kapat ki jüri modeli görebilsin
+                screen.style.display = "none";
             });
         }
     };
 
-    // === 4. SKETCHFAB API ===
+    // === SKETCHFAB API ===
     var iframe = document.getElementById( 'viewer' );
-    var uid = '35d9707a712d4da1a88d1e4f82da8797';
+    var uid = '35d9707a712d4da1a88d1e4f82da8797'; // Senin Model ID'n
     var client = new Sketchfab( iframe );
 
     client.init( uid, {
         success: function( api ) {
             api.start();
             api.addEventListener( 'viewerready', function() {
-                console.log( 'Viewer is ready' );
+                console.log( 'Viewer ready' );
+                statusDiv.innerText = "Model Ready. Press HEAR.";
 
                 api.addEventListener( 'annotationFocus', function( index ) {
-                    console.log( 'Annotation tıklandı: ', index );
-                    
                     if(!audioUnlocked) return;
 
-                    // Tüm sesleri durdur
+                    // Tüm sesleri sustur
                     sounds.forEach(function(s){ s.pause(); s.currentTime=0; });
 
                     // İlgili sesi çal
@@ -131,7 +148,7 @@
             } );
         },
         error: function() {
-            alert( 'Sketchfab hatası: Model yüklenemedi.' );
+            alert( 'Sketchfab Error: Model could not load.' );
         },
         autostart: 1,
         ui_controls: 1,
