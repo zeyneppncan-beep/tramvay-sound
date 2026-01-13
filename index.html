@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Tramvay – Sesli Mekân</title>
+<title>Tramvay – Sesli Deneyim</title>
 
 <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.13.0.js"></script>
 
@@ -13,15 +13,33 @@ html, body {
   height: 100%;
   overflow: hidden;
 }
+
+/* Sketchfab */
 #viewer {
   width: 100%;
   height: 100%;
+}
+
+/* SES BAŞLAT BUTONU */
+#startSound {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 18px 32px;
+  font-size: 18px;
+  background: black;
+  color: white;
+  border: none;
+  cursor: pointer;
+  z-index: 9999;
 }
 </style>
 </head>
 
 <body>
 
+<button id="startSound">Sesli Deneyimi Başlat</button>
 <div id="viewer"></div>
 
 <script>
@@ -39,9 +57,26 @@ const sounds = [
 
 sounds.forEach(s => {
   s.loop = true;
-  s.volume = 0.8;
+  s.volume = 0.9;
 });
 
+/* =====================
+   KİLİT AÇMA
+===================== */
+let audioUnlocked = false;
+
+document.getElementById("startSound").onclick = () => {
+  sounds[0].play().then(() => {
+    sounds[0].pause();
+    sounds[0].currentTime = 0;
+    audioUnlocked = true;
+    document.getElementById("startSound").style.display = "none";
+  });
+};
+
+/* =====================
+   SES KONTROL
+===================== */
 function stopAll() {
   sounds.forEach(s => {
     s.pause();
@@ -59,16 +94,20 @@ client.init("35d9707a712d4da1a88d1e4f82da8797", {
   autostart: 1,
   ui_annotations: 1,
   ui_controls: 1,
+
   success: function(api) {
     api.start();
 
     api.addEventListener("annotationFocus", function(index) {
+      if (!audioUnlocked) return;
+
       stopAll();
       if (sounds[index]) {
         sounds[index].play();
       }
     });
   },
+
   error: function() {
     alert("Model yüklenemedi");
   }
