@@ -1,77 +1,120 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
-  <meta charset="utf-8">
-  <title>Tramvay Yolculuğu</title>
-  <iframe
-  src="https://sketchfab.com/models/35d9707a712d4da1a88d1e4f82da8797/embed"
-  width="100%"
-  height="100%"
-  allow="autoplay; fullscreen; xr-spatial-tracking"
-  allowfullscreen
-></iframe>
-  <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.13.0.js"></script>
-  <style>
-    html, body { margin:0; height:100%; overflow:hidden; }
-    #viewer { width:100%; height:100%; }
-    #start {
-      position: absolute;
-      z-index: 10;
-      top: 20px;
-      left: 20px;
-      padding: 12px 18px;
-      background: black;
-      color: white;
-      border: none;
-      font-size: 14px;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Tramvay Yolculuğu – Sesli Model</title>
+
+<script src="https://static.sketchfab.com/api/sketchfab-viewer-1.13.0.js"></script>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+}
+
+#viewer {
+  width: 100%;
+  height: 100%;
+}
+
+#startButton {
+  position: absolute;
+  z-index: 9999;
+  top: 20px;
+  left: 20px;
+  padding: 14px 20px;
+  background: black;
+  color: white;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+</style>
 </head>
+
 <body>
 
-<button id="start">🔊 Sesleri Başlat</button>
+<button id="startButton">🔊 Sesleri Başlat</button>
 <div id="viewer"></div>
 
 <script>
-<script>
-let audioEnabled = false;
-
+/* ==============================
+   SES DOSYALARI
+================================ */
 const sounds = [
-  new Audio('sounds/trafik.mp3'),
-  new Audio('sounds/ic_konusma.mp3'),
-  new Audio('sounds/tramvay_ray.mp3'),
-  new Audio('sounds/kapi.mp3'),
-  new Audio('sounds/marti.mp3'),
-  new Audio('sounds/nefes.mp3')
+  new Audio("sounds/trafik.mp3"),
+  new Audio("sounds/ic_konusma.mp3"),
+  new Audio("sounds/tramvay_ray.mp3"),
+  new Audio("sounds/kapi.mp3"),
+  new Audio("sounds/marti.mp3"),
+  new Audio("sounds/nefes.mp3")
 ];
 
 sounds.forEach(s => {
   s.loop = true;
-  s.volume = 0.6;
+  s.volume = 0.7;
 });
 
-function stopAll() {
+let audioUnlocked = false;
+
+function stopAllSounds() {
   sounds.forEach(s => {
     s.pause();
     s.currentTime = 0;
   });
 }
 
-document.getElementById('start').addEventListener('click', () => {
-  // 🔑 iOS için zorunlu tetikleme
-  sounds[0].play().then(() => {
-    sounds[0].pause();
-    sounds[0].currentTime = 0;
-    audioEnabled = true;
-    document.getElementById('start').style.display = 'none';
-  });
-});
-</script>
+/* ==============================
+   iOS / SAFARI SES KİLİDİ AÇMA
+================================ */
+const startButton = document.getElementById("startButton");
 
+startButton.addEventListener("click", () => {
+  // Safari için gerçek kullanıcı tetikleme
+  sounds[0].play()
+    .then(() => {
+      sounds[0].pause();
+      sounds[0].currentTime = 0;
+      audioUnlocked = true;
+      startButton.style.display = "none";
+    })
+    .catch(err => {
+      console.log("Ses başlatılamadı:", err);
+    });
+});
+
+/* ==============================
+   SKETCHFAB VIEWER
+================================ */
+const iframe = document.getElementById("viewer");
+const client = new Sketchfab("1.13.0", iframe);
+
+client.init("35d9707a712d4da1a88d1e4f82da8797", {
+  autostart: 1,
+  ui_infos: 0,
+  ui_controls: 1,
+  success: function (api) {
+    api.start();
+
+    api.addEventListener("annotationFocus", function(index) {
+      if (!audioUnlocked) return;
+
+      stopAllSounds();
+
+      if (sounds[index]) {
+        sounds[index].play();
+      }
+    });
+  },
+  error: function () {
+    alert("Sketchfab model yüklenemedi.");
+  }
+});
 </script>
 
 </body>
 </html>
-
-
