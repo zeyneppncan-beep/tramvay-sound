@@ -34,6 +34,7 @@
 <div id="viewer"></div>
 
 <script>
+<script>
 let audioEnabled = false;
 
 const sounds = [
@@ -58,27 +59,19 @@ function stopAll() {
 }
 
 document.getElementById('start').addEventListener('click', () => {
-  audioEnabled = true;
-  document.getElementById('start').style.display = 'none';
+  // 🔑 iOS için zorunlu tetikleme
+  sounds[0].play().then(() => {
+    sounds[0].pause();
+    sounds[0].currentTime = 0;
+    audioEnabled = true;
+    document.getElementById('start').style.display = 'none';
+  });
 });
+</script>
 
-const iframe = document.getElementById('viewer');
-const client = new Sketchfab('1.13.0', iframe);
-
-client.init('35d9707a712d4da1a88d1e4f82da8797', {
-  autostart: 1,
-  ui_infos: 0,
-  success: function(api) {
-    api.start();
-    api.addEventListener('annotationFocus', function(index) {
-      if (!audioEnabled) return;
-      stopAll();
-      if (sounds[index]) sounds[index].play();
-    });
-  }
-});
 </script>
 
 </body>
 </html>
+
 
