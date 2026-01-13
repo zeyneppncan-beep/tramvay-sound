@@ -3,162 +3,130 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tramvay – Sesli Deneyim</title>
-
+<title>Tramvay – Hata Ayıklama Modu</title>
 <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js"></script>
-
 <style>
-    html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background-color: #333;
-        font-family: sans-serif;
-    }
-
-    /* Sketchfab İframe */
-    #viewer {
-        width: 100%;
-        height: 100%;
-        border: none;
-    }
-
-    /* SES BAŞLAT BUTONU */
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #333; font-family: sans-serif; }
+    #viewer { width: 100%; height: 100%; border: none; }
+    
+    /* BAŞLAT BUTONU */
     #startSound {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        padding: 20px 40px;
-        font-size: 20px;
-        font-weight: bold;
-        background: #e74c3c;
-        color: white;
-        border: 2px solid white;
-        border-radius: 8px;
-        cursor: pointer;
-        z-index: 9999;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        transition: background 0.3s;
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        padding: 20px 40px; font-size: 20px; font-weight: bold;
+        background: #e74c3c; color: white; border: 2px solid white;
+        border-radius: 8px; cursor: pointer; z-index: 9999;
     }
 
-    #startSound:hover {
-        background: #c0392b;
+    /* HATA EKRANI (DEBUGGER) */
+    #debugLog {
+        position: fixed; top: 0; left: 0; width: 300px; height: auto;
+        background: rgba(0,0,0,0.8); color: #00ff00;
+        padding: 10px; font-size: 12px; z-index: 10000;
+        pointer-events: none; font-family: monospace;
     }
+    .error { color: #ff5555; font-weight: bold; }
 </style>
 </head>
-
 <body>
 
+<div id="debugLog">Sistem Hazırlanıyor...<br></div>
 <iframe src="" id="viewer" allow="autoplay; fullscreen; vr" allowvr allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
-
 <button id="startSound">Sesli Deneyimi Başlat</button>
 
 <script>
-    /* =====================
-       1. SES DOSYALARI
-       DİKKAT: Github'da dosya isimleri büyük/küçük harfe duyarlıdır.
-       "sounds/Trafik.mp3" ile "sounds/trafik.mp3" farklıdır.
-    ===================== */
-    const sounds = [
-        new Audio("sounds/trafik.mp3"),      // Annotation 0
-        new Audio("sounds/tramvay_ic.mp3"),  // Annotation 1
-        new Audio("sounds/tramvay_ray.mp3"), // Annotation 2
-        new Audio("sounds/kapi.mp3"),        // Annotation 3
-        new Audio("sounds/marti.mp3"),       // Annotation 4
-        new Audio("sounds/nefes.mp3")        // Annotation 5
+    // === YARDIMCI: EKRANA LOG YAZMA ===
+    function log(msg, isError = false) {
+        const d = document.getElementById("debugLog");
+        d.innerHTML += (isError ? "<span class='error'>[HATA] " : "[BİLGİ] ") + msg + (isError ? "</span>" : "") + "<br>";
+        console.log(msg);
+    }
+
+    // === 1. SES DOSYALARI ===
+    // Dosya isimlerinizi BURADAN kontrol edin.
+    const fileNames = [
+        "sounds/trafik.mp3",      // 0
+        "sounds/tramvay_ic.mp3",  // 1
+        "sounds/tramvay_ray.mp3", // 2
+        "sounds/kapi.mp3",        // 3
+        "sounds/marti.mp3",       // 4
+        "sounds/nefes.mp3"        // 5
     ];
 
-    // Ses ayarları
-    sounds.forEach(s => {
-        s.loop = true;  // Döngüye al
-        s.volume = 1.0; // Ses seviyesi
-        s.preload = 'auto'; // Ön yükleme yap
+    const sounds = fileNames.map(src => {
+        const audio = new Audio(src);
+        audio.loop = true;
+        audio.volume = 1.0;
+        // Dosya yüklenemezse hatayı yakala ve ekrana yaz
+        audio.addEventListener('error', function(e) {
+            log("Ses dosyası bulunamadı: " + src, true);
+        });
+        return audio;
     });
 
     let audioUnlocked = false;
     const btn = document.getElementById("startSound");
 
-    /* =====================
-       2. KİLİT AÇMA (TARAYICI İZNİ)
-    ===================== */
+    // === 2. KİLİT AÇMA ===
     btn.onclick = () => {
-        console.log("Butona basıldı, ses kilidi açılıyor...");
+        log("Butona tıklandı. Ses motoru açılıyor...");
         
-        // İlk sesi çok kısa çalıp durdurarak tarayıcı iznini alıyoruz
-        // Eğer dosya yolu yanlışsa burada hata verir, onu yakalıyoruz (.catch)
-        const startPromise = sounds[0].play();
+        // Hata olsa bile butonu gizle ki sistem donmuş gibi görünmesin
+        btn.style.display = "none";
+        audioUnlocked = true;
 
-        if (startPromise !== undefined) {
-            startPromise.then(() => {
-                console.log("Ses motoru başlatıldı.");
-                sounds[0].pause();
-                sounds[0].currentTime = 0;
-                audioUnlocked = true;
-                btn.style.display = "none"; // Butonu gizle
-            }).catch(error => {
-                console.error("Ses çalma hatası! Dosya yolu doğru mu?", error);
-                alert("Ses dosyası bulunamadı veya tarayıcı engelledi. Lütfen dosya adlarını kontrol edin.");
-            });
-        }
+        // İlk sesi test amaçlı çalmayı dene
+        sounds[0].play().then(() => {
+            log("Ses motoru başarıyla çalıştı!");
+            sounds[0].pause();
+            sounds[0].currentTime = 0;
+        }).catch(err => {
+            log("Ses oynatma hatası: " + err.message, true);
+            log("Lütfen 'sounds' klasörünün adını ve içindeki dosyaları kontrol edin.", true);
+        });
     };
 
-    /* =====================
-       3. SES KONTROL FONKSİYONLARI
-    ===================== */
     function stopAll() {
-        sounds.forEach(s => {
-            s.pause();
-            s.currentTime = 0;
-        });
+        sounds.forEach(s => { s.pause(); s.currentTime = 0; });
     }
 
-    /* =====================
-       4. SKETCHFAB ENTEGRASYONU
-    ===================== */
+    // === 3. SKETCHFAB ===
     const iframe = document.getElementById("viewer");
-    const uid = "35d9707a712d4da1a88d1e4f82da8797"; // Model ID'niz
+    const uid = "35d9707a712d4da1a88d1e4f82da8797"; 
     const client = new Sketchfab(iframe);
 
     client.init(uid, {
         success: function(api) {
-            console.log("Sketchfab API Başarıyla Yüklendi!");
+            log("Sketchfab yüklendi.");
             api.start();
             api.addEventListener("viewerready", function() {
-                console.log("Model Görüntülemeye Hazır.");
+                log("Model hazır! Numaralara tıklayabilirsiniz.");
 
-                // Annotations (Notlar) olayı
                 api.addEventListener("annotationFocus", function(index) {
-                    console.log("Tıklanan Annotation İndeksi:", index);
+                    log("Tıklanan Annotation No: " + index);
 
                     if (!audioUnlocked) {
-                        console.log("Ses henüz açılmadı, lütfen butona basın.");
+                        log("Önce 'Sesli Deneyimi Başlat' butonuna basmalısınız!", true);
                         return;
                     }
 
-                    stopAll(); // Önceki sesleri sustur
-
-                    // Eğer tıklanan not için bir ses dosyası varsa çal
+                    stopAll();
                     if (sounds[index]) {
-                        console.log("Çalınıyor:", sounds[index].src);
-                        sounds[index].play().catch(e => console.error("Çalma hatası:", e));
+                        log("Çalınıyor: " + fileNames[index]);
+                        var playPromise = sounds[index].play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => {
+                                log("Oynatılamadı: " + error, true);
+                            });
+                        }
                     } else {
-                        console.warn("Bu indeks (" + index + ") için bir ses dosyası atanmamış.");
+                        log("Bu numara için listede ses yok.", true);
                     }
                 });
             });
         },
-        error: function() {
-            console.error("Sketchfab hatası: Model yüklenemedi.");
-            alert("Model yüklenemedi.");
-        },
-        autostart: 1,
-        ui_annotations: 1,
-        ui_controls: 1
+        error: function() { log("Sketchfab yükleme hatası!", true); },
+        autostart: 1, ui_annotations: 1, ui_controls: 1
     });
 </script>
-
 </body>
 </html>
