@@ -5,19 +5,29 @@
   <title>Tramvay Yolculuğu</title>
   <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.13.0.js"></script>
   <style>
-    html, body { margin:0; height:100%; }
+    html, body { margin:0; height:100%; overflow:hidden; }
     #viewer { width:100%; height:100%; }
+    #start {
+      position: absolute;
+      z-index: 10;
+      top: 20px;
+      left: 20px;
+      padding: 12px 18px;
+      background: black;
+      color: white;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
+<button id="start">🔊 Sesleri Başlat</button>
 <div id="viewer"></div>
 
 <script>
-const iframe = document.getElementById('viewer');
-const client = new Sketchfab('1.13.0', iframe);
-
-const modelUID = '35d9707a712d4da1a88d1e4f82da8797';
+let audioEnabled = false;
 
 const sounds = [
   new Audio('sounds/trafik.mp3'),
@@ -40,12 +50,21 @@ function stopAll() {
   });
 }
 
-client.init(modelUID, {
+document.getElementById('start').addEventListener('click', () => {
+  audioEnabled = true;
+  document.getElementById('start').style.display = 'none';
+});
+
+const iframe = document.getElementById('viewer');
+const client = new Sketchfab('1.13.0', iframe);
+
+client.init('35d9707a712d4da1a88d1e4f82da8797', {
   autostart: 1,
   ui_infos: 0,
   success: function(api) {
     api.start();
     api.addEventListener('annotationFocus', function(index) {
+      if (!audioEnabled) return;
       stopAll();
       if (sounds[index]) sounds[index].play();
     });
