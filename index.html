@@ -2,65 +2,35 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Tramvay Yolculuğu – Sesli Model</title>
+<title>Tramvay – Sesli Mekân</title>
 
 <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.13.0.js"></script>
 
 <style>
 html, body {
   margin: 0;
-  padding: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: Arial, sans-serif;
 }
-
-/* Ana container */
-#app {
-  position: relative;
+#viewer {
   width: 100%;
   height: 100%;
-}
-
-/* Sketchfab alanı */
-#viewer {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
-/* SES BAŞLAT BUTONU */
-#startButton {
-  position: absolute;
-  z-index: 99999; /* 🔴 EN ÜSTTE */
-  top: 20px;
-  left: 20px;
-  padding: 14px 20px;
-  background: black;
-  color: white;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  pointer-events: auto; /* 🔴 TIKLANABİLİR */
 }
 </style>
 </head>
 
 <body>
 
-<div id="app">
-  <button id="startButton">🔊 Sesleri Başlat</button>
-  <div id="viewer"></div>
-</div>
+<div id="viewer"></div>
 
 <script>
-/* ======================
-   SESLER
-====================== */
+/* =====================
+   SES DOSYALARI
+===================== */
 const sounds = [
   new Audio("sounds/trafik.mp3"),
-  new Audio("sounds/ic_konusma.mp3"),
+  new Audio("sounds/tramvay_ic.mp3"),
   new Audio("sounds/tramvay_ray.mp3"),
   new Audio("sounds/kapi.mp3"),
   new Audio("sounds/marti.mp3"),
@@ -69,59 +39,38 @@ const sounds = [
 
 sounds.forEach(s => {
   s.loop = true;
-  s.volume = 0.7;
+  s.volume = 0.8;
 });
 
-let audioUnlocked = false;
-
-function stopAllSounds() {
+function stopAll() {
   sounds.forEach(s => {
     s.pause();
     s.currentTime = 0;
   });
 }
 
-/* ======================
-   SES KİLİDİ (iOS)
-====================== */
-const startButton = document.getElementById("startButton");
-
-startButton.addEventListener("click", () => {
-  sounds[0].play().then(() => {
-    sounds[0].pause();
-    sounds[0].currentTime = 0;
-    audioUnlocked = true;
-    startButton.style.display = "none";
-  }).catch(err => {
-    console.log("Ses kilidi açılamadı:", err);
-  });
-});
-
-/* ======================
+/* =====================
    SKETCHFAB
-====================== */
+===================== */
 const iframe = document.getElementById("viewer");
 const client = new Sketchfab("1.13.0", iframe);
 
 client.init("35d9707a712d4da1a88d1e4f82da8797", {
   autostart: 1,
-  ui_infos: 0,
+  ui_annotations: 1,
   ui_controls: 1,
-  success: function (api) {
+  success: function(api) {
     api.start();
 
     api.addEventListener("annotationFocus", function(index) {
-      if (!audioUnlocked) return;
-
-      stopAllSounds();
-
+      stopAll();
       if (sounds[index]) {
         sounds[index].play();
       }
     });
   },
-  error: function () {
-    alert("Sketchfab model yüklenemedi");
+  error: function() {
+    alert("Model yüklenemedi");
   }
 });
 </script>
