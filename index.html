@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Tramvay Yolculuğu – Sesli Model</title>
 
 <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.13.0.js"></script>
@@ -16,14 +16,24 @@ html, body {
   font-family: Arial, sans-serif;
 }
 
-#viewer {
+/* Ana container */
+#app {
+  position: relative;
   width: 100%;
   height: 100%;
 }
 
+/* Sketchfab alanı */
+#viewer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* SES BAŞLAT BUTONU */
 #startButton {
   position: absolute;
-  z-index: 9999;
+  z-index: 99999; /* 🔴 EN ÜSTTE */
   top: 20px;
   left: 20px;
   padding: 14px 20px;
@@ -32,19 +42,22 @@ html, body {
   border: none;
   font-size: 14px;
   cursor: pointer;
+  pointer-events: auto; /* 🔴 TIKLANABİLİR */
 }
 </style>
 </head>
 
 <body>
 
-<button id="startButton">🔊 Sesleri Başlat</button>
-<div id="viewer"></div>
+<div id="app">
+  <button id="startButton">🔊 Sesleri Başlat</button>
+  <div id="viewer"></div>
+</div>
 
 <script>
-/* ==============================
-   SES DOSYALARI
-================================ */
+/* ======================
+   SESLER
+====================== */
 const sounds = [
   new Audio("sounds/trafik.mp3"),
   new Audio("sounds/ic_konusma.mp3"),
@@ -68,28 +81,25 @@ function stopAllSounds() {
   });
 }
 
-/* ==============================
-   iOS / SAFARI SES KİLİDİ AÇMA
-================================ */
+/* ======================
+   SES KİLİDİ (iOS)
+====================== */
 const startButton = document.getElementById("startButton");
 
 startButton.addEventListener("click", () => {
-  // Safari için gerçek kullanıcı tetikleme
-  sounds[0].play()
-    .then(() => {
-      sounds[0].pause();
-      sounds[0].currentTime = 0;
-      audioUnlocked = true;
-      startButton.style.display = "none";
-    })
-    .catch(err => {
-      console.log("Ses başlatılamadı:", err);
-    });
+  sounds[0].play().then(() => {
+    sounds[0].pause();
+    sounds[0].currentTime = 0;
+    audioUnlocked = true;
+    startButton.style.display = "none";
+  }).catch(err => {
+    console.log("Ses kilidi açılamadı:", err);
+  });
 });
 
-/* ==============================
-   SKETCHFAB VIEWER
-================================ */
+/* ======================
+   SKETCHFAB
+====================== */
 const iframe = document.getElementById("viewer");
 const client = new Sketchfab("1.13.0", iframe);
 
@@ -111,7 +121,7 @@ client.init("35d9707a712d4da1a88d1e4f82da8797", {
     });
   },
   error: function () {
-    alert("Sketchfab model yüklenemedi.");
+    alert("Sketchfab model yüklenemedi");
   }
 });
 </script>
