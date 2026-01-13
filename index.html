@@ -2,116 +2,162 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tramvay – Sesli Deneyim</title>
 
-<script src="https://static.sketchfab.com/api/sketchfab-viewer-1.13.0.js"></script>
+<script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js"></script>
 
 <style>
-html, body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #333;
+        font-family: sans-serif;
+    }
 
-/* Sketchfab */
-#viewer {
-  width: 100%;
-  height: 100%;
-}
+    /* Sketchfab İframe */
+    #viewer {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
 
-/* SES BAŞLAT BUTONU */
-#startSound {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 18px 32px;
-  font-size: 18px;
-  background: black;
-  color: white;
-  border: none;
-  cursor: pointer;
-  z-index: 9999;
-}
+    /* SES BAŞLAT BUTONU */
+    #startSound {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 20px 40px;
+        font-size: 20px;
+        font-weight: bold;
+        background: #e74c3c;
+        color: white;
+        border: 2px solid white;
+        border-radius: 8px;
+        cursor: pointer;
+        z-index: 9999;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        transition: background 0.3s;
+    }
+
+    #startSound:hover {
+        background: #c0392b;
+    }
 </style>
 </head>
 
 <body>
 
+<iframe src="" id="viewer" allow="autoplay; fullscreen; vr" allowvr allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
+
 <button id="startSound">Sesli Deneyimi Başlat</button>
-<div id="viewer"></div>
 
 <script>
-/* =====================
-   SES DOSYALARI
-===================== */
-const sounds = [
-  new Audio("sounds/trafik.mp3"),
-  new Audio("sounds/tramvay_ic.mp3"),
-  new Audio("sounds/tramvay_ray.mp3"),
-  new Audio("sounds/kapi.mp3"),
-  new Audio("sounds/marti.mp3"),
-  new Audio("sounds/nefes.mp3")
-];
+    /* =====================
+       1. SES DOSYALARI
+       DİKKAT: Github'da dosya isimleri büyük/küçük harfe duyarlıdır.
+       "sounds/Trafik.mp3" ile "sounds/trafik.mp3" farklıdır.
+    ===================== */
+    const sounds = [
+        new Audio("sounds/trafik.mp3"),      // Annotation 0
+        new Audio("sounds/tramvay_ic.mp3"),  // Annotation 1
+        new Audio("sounds/tramvay_ray.mp3"), // Annotation 2
+        new Audio("sounds/kapi.mp3"),        // Annotation 3
+        new Audio("sounds/marti.mp3"),       // Annotation 4
+        new Audio("sounds/nefes.mp3")        // Annotation 5
+    ];
 
-sounds.forEach(s => {
-  s.loop = true;
-  s.volume = 0.9;
-});
-
-/* =====================
-   KİLİT AÇMA
-===================== */
-let audioUnlocked = false;
-
-document.getElementById("startSound").onclick = () => {
-  sounds[0].play().then(() => {
-    sounds[0].pause();
-    sounds[0].currentTime = 0;
-    audioUnlocked = true;
-    document.getElementById("startSound").style.display = "none";
-  });
-};
-
-/* =====================
-   SES KONTROL
-===================== */
-function stopAll() {
-  sounds.forEach(s => {
-    s.pause();
-    s.currentTime = 0;
-  });
-}
-
-/* =====================
-   SKETCHFAB
-===================== */
-const iframe = document.getElementById("viewer");
-const client = new Sketchfab("1.13.0", iframe);
-
-client.init("35d9707a712d4da1a88d1e4f82da8797", {
-  autostart: 1,
-  ui_annotations: 1,
-  ui_controls: 1,
-
-  success: function(api) {
-    api.start();
-
-    api.addEventListener("annotationFocus", function(index) {
-      if (!audioUnlocked) return;
-
-      stopAll();
-      if (sounds[index]) {
-        sounds[index].play();
-      }
+    // Ses ayarları
+    sounds.forEach(s => {
+        s.loop = true;  // Döngüye al
+        s.volume = 1.0; // Ses seviyesi
+        s.preload = 'auto'; // Ön yükleme yap
     });
-  },
 
-  error: function() {
-    alert("Model yüklenemedi");
-  }
-});
+    let audioUnlocked = false;
+    const btn = document.getElementById("startSound");
+
+    /* =====================
+       2. KİLİT AÇMA (TARAYICI İZNİ)
+    ===================== */
+    btn.onclick = () => {
+        console.log("Butona basıldı, ses kilidi açılıyor...");
+        
+        // İlk sesi çok kısa çalıp durdurarak tarayıcı iznini alıyoruz
+        // Eğer dosya yolu yanlışsa burada hata verir, onu yakalıyoruz (.catch)
+        const startPromise = sounds[0].play();
+
+        if (startPromise !== undefined) {
+            startPromise.then(() => {
+                console.log("Ses motoru başlatıldı.");
+                sounds[0].pause();
+                sounds[0].currentTime = 0;
+                audioUnlocked = true;
+                btn.style.display = "none"; // Butonu gizle
+            }).catch(error => {
+                console.error("Ses çalma hatası! Dosya yolu doğru mu?", error);
+                alert("Ses dosyası bulunamadı veya tarayıcı engelledi. Lütfen dosya adlarını kontrol edin.");
+            });
+        }
+    };
+
+    /* =====================
+       3. SES KONTROL FONKSİYONLARI
+    ===================== */
+    function stopAll() {
+        sounds.forEach(s => {
+            s.pause();
+            s.currentTime = 0;
+        });
+    }
+
+    /* =====================
+       4. SKETCHFAB ENTEGRASYONU
+    ===================== */
+    const iframe = document.getElementById("viewer");
+    const uid = "35d9707a712d4da1a88d1e4f82da8797"; // Model ID'niz
+    const client = new Sketchfab(iframe);
+
+    client.init(uid, {
+        success: function(api) {
+            console.log("Sketchfab API Başarıyla Yüklendi!");
+            api.start();
+            api.addEventListener("viewerready", function() {
+                console.log("Model Görüntülemeye Hazır.");
+
+                // Annotations (Notlar) olayı
+                api.addEventListener("annotationFocus", function(index) {
+                    console.log("Tıklanan Annotation İndeksi:", index);
+
+                    if (!audioUnlocked) {
+                        console.log("Ses henüz açılmadı, lütfen butona basın.");
+                        return;
+                    }
+
+                    stopAll(); // Önceki sesleri sustur
+
+                    // Eğer tıklanan not için bir ses dosyası varsa çal
+                    if (sounds[index]) {
+                        console.log("Çalınıyor:", sounds[index].src);
+                        sounds[index].play().catch(e => console.error("Çalma hatası:", e));
+                    } else {
+                        console.warn("Bu indeks (" + index + ") için bir ses dosyası atanmamış.");
+                    }
+                });
+            });
+        },
+        error: function() {
+            console.error("Sketchfab hatası: Model yüklenemedi.");
+            alert("Model yüklenemedi.");
+        },
+        autostart: 1,
+        ui_annotations: 1,
+        ui_controls: 1
+    });
 </script>
 
 </body>
