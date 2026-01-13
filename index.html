@@ -3,130 +3,185 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tramvay – Hata Ayıklama Modu</title>
+<title>Tramvay – Sesli Deneyim</title>
 <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js"></script>
 <style>
-    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #333; font-family: sans-serif; }
-    #viewer { width: 100%; height: 100%; border: none; }
-    
-    /* BAŞLAT BUTONU */
-    #startSound {
-        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        padding: 20px 40px; font-size: 20px; font-weight: bold;
-        background: #e74c3c; color: white; border: 2px solid white;
-        border-radius: 8px; cursor: pointer; z-index: 9999;
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #000;
     }
 
-    /* HATA EKRANI (DEBUGGER) */
-    #debugLog {
-        position: fixed; top: 0; left: 0; width: 300px; height: auto;
-        background: rgba(0,0,0,0.8); color: #00ff00;
-        padding: 10px; font-size: 12px; z-index: 10000;
-        pointer-events: none; font-family: monospace;
+    /* 3D GÖRÜNTÜLEYİCİ */
+    #viewer {
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: block; /* Başlangıçta görünür, ama overlay üstünde olacak */
     }
-    .error { color: #ff5555; font-weight: bold; }
+
+    /* GİRİŞ EKRANI (Sorunu Çözen Kısım) */
+    #overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.95); /* Arkası hafif görünen siyah */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999; /* En üstte durması için */
+        color: white;
+        text-align: center;
+    }
+
+    /* BAŞLAT BUTONU TASARIMI */
+    #startBtn {
+        padding: 20px 50px;
+        font-size: 24px;
+        font-weight: bold;
+        color: white;
+        background: #e74c3c;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
+        transition: transform 0.2s, background 0.2s;
+        margin-top: 20px;
+    }
+
+    #startBtn:hover {
+        background: #c0392b;
+        transform: scale(1.05); /* Üzerine gelince büyür */
+    }
+
+    #startBtn:active {
+        transform: scale(0.95); /* Tıklayınca küçülür */
+    }
+
+    /* BİLGİ YAZILARI */
+    h1 { margin-bottom: 10px; }
+    p { color: #ccc; max-width: 600px; line-height: 1.5; }
+
+    /* DEBUG KUTUSU (Sol Üst) */
+    #debugLog {
+        position: fixed; top: 10px; left: 10px; 
+        background: rgba(0,0,0,0.7); color: #0f0; 
+        padding: 10px; font-size: 12px; pointer-events: none; 
+        z-index: 100000; font-family: monospace; max-width: 300px;
+    }
+    .err { color: #ff5555; font-weight: bold; }
 </style>
 </head>
 <body>
 
-<div id="debugLog">Sistem Hazırlanıyor...<br></div>
+<div id="overlay">
+    <h1>Tramvay Deneyimi</h1>
+    <p>Sesli deneyimi başlatmak için aşağıdaki butona tıklayın.<br>3D model üzerindeki numaralara tıklayarak sesleri duyabilirsiniz.</p>
+    <button id="startBtn">DENEYİMİ BAŞLAT</button>
+</div>
+
+<div id="debugLog">Sistem Yükleniyor...<br></div>
+
 <iframe src="" id="viewer" allow="autoplay; fullscreen; vr" allowvr allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
-<button id="startSound">Sesli Deneyimi Başlat</button>
 
 <script>
-    // === YARDIMCI: EKRANA LOG YAZMA ===
-    function log(msg, isError = false) {
+    // === LOG YAZDIRMA ===
+    function log(msg, isErr = false) {
         const d = document.getElementById("debugLog");
-        d.innerHTML += (isError ? "<span class='error'>[HATA] " : "[BİLGİ] ") + msg + (isError ? "</span>" : "") + "<br>";
+        d.innerHTML += (isErr ? "<span class='err'>[X] " : "[OK] ") + msg + (isErr ? "</span>" : "") + "<br>";
         console.log(msg);
     }
 
-    // === 1. SES DOSYALARI ===
-    // Dosya isimlerinizi BURADAN kontrol edin.
+    // === 1. SES DOSYALARI LİSTESİ ===
+    // Buradaki sıra Sketchfab'daki Annotation sırasıyla aynı olmalı (1, 2, 3...)
+    // Not: Diziler 0'dan başlar. Annotation 1 -> sounds[0] olur.
     const fileNames = [
-        "sounds/trafik.mp3",      // 0
-        "sounds/tramvay_ic.mp3",  // 1
-        "sounds/tramvay_ray.mp3", // 2
-        "sounds/kapi.mp3",        // 3
-        "sounds/marti.mp3",       // 4
-        "sounds/nefes.mp3"        // 5
+        "sounds/trafik.mp3",      
+        "sounds/tramvay_ic.mp3",  
+        "sounds/tramvay_ray.mp3", 
+        "sounds/kapi.mp3",        
+        "sounds/marti.mp3",       
+        "sounds/nefes.mp3"        
     ];
 
     const sounds = fileNames.map(src => {
         const audio = new Audio(src);
         audio.loop = true;
-        audio.volume = 1.0;
-        // Dosya yüklenemezse hatayı yakala ve ekrana yaz
-        audio.addEventListener('error', function(e) {
-            log("Ses dosyası bulunamadı: " + src, true);
-        });
+        audio.preload = 'auto';
+        audio.addEventListener('error', () => log("Dosya YOK: " + src, true));
         return audio;
     });
 
     let audioUnlocked = false;
-    const btn = document.getElementById("startSound");
+    const overlay = document.getElementById("overlay");
+    const btn = document.getElementById("startBtn");
 
-    // === 2. KİLİT AÇMA ===
-    btn.onclick = () => {
-        log("Butona tıklandı. Ses motoru açılıyor...");
+    // === 2. BAŞLAT BUTONU OLAYI ===
+    btn.addEventListener("click", function() {
+        log("Butona basıldı.");
         
-        // Hata olsa bile butonu gizle ki sistem donmuş gibi görünmesin
-        btn.style.display = "none";
-        audioUnlocked = true;
-
-        // İlk sesi test amaçlı çalmayı dene
-        sounds[0].play().then(() => {
-            log("Ses motoru başarıyla çalıştı!");
-            sounds[0].pause();
-            sounds[0].currentTime = 0;
-        }).catch(err => {
-            log("Ses oynatma hatası: " + err.message, true);
-            log("Lütfen 'sounds' klasörünün adını ve içindeki dosyaları kontrol edin.", true);
-        });
-    };
+        // Ses motorunu "dürtüyoruz" (unlocking AudioContext)
+        // Boş bir play/pause yaparak tarayıcıya "kullanıcı izin verdi" diyoruz.
+        if(sounds[0]) {
+            sounds[0].play().then(() => {
+                sounds[0].pause();
+                sounds[0].currentTime = 0;
+                log("Ses kildi açıldı!");
+                
+                // Ekranı kaldır
+                overlay.style.display = "none";
+                audioUnlocked = true;
+            }).catch(e => {
+                log("Ses hatası: " + e.message, true);
+                alert("Ses başlatılamadı! Dosya yollarını kontrol edin.");
+            });
+        }
+    });
 
     function stopAll() {
         sounds.forEach(s => { s.pause(); s.currentTime = 0; });
     }
 
-    // === 3. SKETCHFAB ===
+    // === 3. SKETCHFAB API ===
     const iframe = document.getElementById("viewer");
     const uid = "35d9707a712d4da1a88d1e4f82da8797"; 
     const client = new Sketchfab(iframe);
 
     client.init(uid, {
         success: function(api) {
-            log("Sketchfab yüklendi.");
+            log("Sketchfab bağlandı.");
             api.start();
             api.addEventListener("viewerready", function() {
-                log("Model hazır! Numaralara tıklayabilirsiniz.");
-
+                log("Model yüklendi.");
+                
                 api.addEventListener("annotationFocus", function(index) {
-                    log("Tıklanan Annotation No: " + index);
-
-                    if (!audioUnlocked) {
-                        log("Önce 'Sesli Deneyimi Başlat' butonuna basmalısınız!", true);
-                        return;
-                    }
-
+                    if (!audioUnlocked) return; // Butona basılmadıysa çalma
+                    
+                    log("Tıklanan No: " + index);
                     stopAll();
+
                     if (sounds[index]) {
-                        log("Çalınıyor: " + fileNames[index]);
-                        var playPromise = sounds[index].play();
-                        if (playPromise !== undefined) {
-                            playPromise.catch(error => {
-                                log("Oynatılamadı: " + error, true);
-                            });
-                        }
+                        log("Çalıyor: " + fileNames[index]);
+                        sounds[index].play().catch(e => log("Oynatma hatası: " + e, true));
                     } else {
-                        log("Bu numara için listede ses yok.", true);
+                        log("Bu numara için ses yok.", true);
                     }
                 });
             });
         },
-        error: function() { log("Sketchfab yükleme hatası!", true); },
-        autostart: 1, ui_annotations: 1, ui_controls: 1
+        error: function() { log("Model yüklenemedi!", true); },
+        autostart: 1, 
+        ui_annotations: 1, 
+        ui_controls: 1
     });
 </script>
+
 </body>
 </html>
