@@ -13,58 +13,45 @@
     /* 3D MODEL ALANI */
     #viewer { width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; z-index: 1; }
 
-    /* GİRİŞ EKRANI (AÇILIŞ) */
+    /* GİRİŞ EKRANI */
     #intro-screen {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background-color: #111; /* Koyu Gri/Siyah */
+        background-color: #111;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        z-index: 99999; /* En üstte */
+        z-index: 99999;
         color: white;
         text-align: center;
-        transition: opacity 1s ease; /* Yavaşça kaybolma efekti */
+        transition: opacity 1s ease;
     }
 
-    /* BAŞLIKLAR */
-    h1 {
-        font-size: 3rem; margin: 0 0 10px 0; letter-spacing: 2px; font-weight: 300;
-        text-transform: uppercase;
-    }
-    
-    h2 {
-        font-size: 1.2rem; margin: 0 0 40px 0; color: #888; font-weight: 400; letter-spacing: 1px;
-    }
+    h1 { font-size: 3rem; margin: 0 0 10px 0; letter-spacing: 2px; font-weight: 300; text-transform: uppercase; }
+    h2 { font-size: 1.5rem; margin: 0 0 10px 0; color: #eee; font-weight: 500; letter-spacing: 1px; }
+    h3 { font-size: 1rem; margin: 0 0 40px 0; color: #e91e63; font-weight: 400; letter-spacing: 1px; } /* Email rengi pembe yapıldı */
 
-    /* YEŞİL HEAR BUTONU */
+    /* PEMBE HEAR BUTONU */
     #btnHear {
-        padding: 15px 60px;
-        font-size: 24px;
-        font-weight: bold;
-        background-color: #27ae60; /* Yeşil Renk */
-        color: white;
-        border: none;
-        border-radius: 50px;
-        cursor: pointer;
-        box-shadow: 0 0 20px rgba(39, 174, 96, 0.4);
-        transition: all 0.3s ease;
-        letter-spacing: 1px;
+        padding: 15px 60px; font-size: 24px; font-weight: bold;
+        background-color: #e91e63; /* Canlı Pembe */
+        color: white; border: none;
+        border-radius: 50px; cursor: pointer;
+        box-shadow: 0 0 20px rgba(233, 30, 99, 0.4); /* Pembe gölge */
+        transition: all 0.3s ease; letter-spacing: 1px;
+    }
+    #btnHear:hover { 
+        background-color: #ff4081; /* Üzerine gelince daha açık pembe */
+        transform: scale(1.05); 
+        box-shadow: 0 0 30px rgba(255, 64, 129, 0.6); 
     }
 
-    #btnHear:hover {
-        background-color: #2ecc71; /* Üzerine gelince açılan renk */
-        transform: scale(1.05);
-        box-shadow: 0 0 30px rgba(46, 204, 113, 0.6);
-    }
-
-    /* Yükleniyor yazısı */
     #status { margin-top: 20px; font-size: 12px; color: #555; }
-
 </style>
 </head>
 <body>
 
 <div id="intro-screen">
     <h1>IND338 Sound of Journey</h1>
-    <h2>Zeynep Nur Can</h2>
+    <h2>Işıl Can</h2>
+    <h3>Contact: isillccan@gmail.com</h3>
     <button id="btnHear">HEAR</button>
     <div id="status">Experience loading...</div>
 </div>
@@ -72,90 +59,53 @@
 <iframe src="" id="viewer" allow="autoplay; fullscreen; vr" allowvr allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
 
 <script>
-    // === DEĞİŞKENLER ===
     var screen = document.getElementById("intro-screen");
     var btn = document.getElementById("btnHear");
     var statusDiv = document.getElementById("status");
     var audioUnlocked = false;
     var sounds = [];
 
-    // === SES DOSYALARI (Lütfen dosya isimlerinin küçük harf olduğundan emin ol) ===
+    // === GÜNCELLENMİŞ SES DOSYALARI LİSTESİ (Kedi ve Konuşma çıkarıldı) ===
+    // Toplam 10 ses kaldı.
     var fileList = [
-        "sounds/trafik.mp3",      // No 1
-        "sounds/tramvay_ic.mp3",  // No 2
-        "sounds/tramvay_ray.mp3", // No 3
-        "sounds/kapi.mp3",        // No 4
-        "sounds/marti.mp3",       // No 5
-        "sounds/nefes.mp3"        // No 6
+        "sounds/trafik.mp3",       // No 1
+        "sounds/tramvay_ic.mp3",   // No 2
+        "sounds/tramvay_ray.mp3",  // No 3
+        "sounds/kapi.mp3",         // No 4
+        "sounds/marti.mp3",        // No 5
+        "sounds/nefes.mp3",        // No 6
+        "sounds/eyupsultan.mp3",   // No 7
+        "sounds/silahtaraga.mp3",  // No 8
+        "sounds/esneme.mp3",       // No 9
+        "sounds/sahil.mp3"         // No 10
     ];
 
-    // Sesleri hafızaya al
     fileList.forEach(function(src) {
         var aud = new Audio(src);
         aud.loop = true;
-        aud.volume = 1.0;
         sounds.push(aud);
     });
 
-    // === HEAR BUTONUNA TIKLAMA ===
+    // === HEAR BUTONU ===
     btn.onclick = function() {
-        statusDiv.innerText = "Audio Context Unlocking...";
-        
-        // Ses motorunu tetikle
+        statusDiv.innerText = "Starting...";
         if(sounds[0]) {
             sounds[0].play().then(function() {
-                // Başarılı ise durdur ve başa al
                 sounds[0].pause();
                 sounds[0].currentTime = 0;
                 audioUnlocked = true;
-                
-                // Ekranı yavaşça kaybet
                 screen.style.opacity = "0";
                 setTimeout(function(){ screen.style.display = "none"; }, 1000);
-                
             }).catch(function(err) {
-                // Hata varsa
-                alert("Audio Error: Please check sound files. \n" + err);
-                // Yine de ekranı kapat ki jüri modeli görebilsin
+                alert("Ses Dosyası Hatası: " + err);
                 screen.style.display = "none";
             });
         }
     };
 
-    // === SKETCHFAB API ===
+    // === SKETCHFAB ===
     var iframe = document.getElementById( 'viewer' );
-    var uid = '35d9707a712d4da1a88d1e4f82da8797'; // Senin Model ID'n
+    var uid = '35d9707a712d4da1a88d1e4f82da8797';
     var client = new Sketchfab( iframe );
 
-    client.init( uid, {
-        success: function( api ) {
-            api.start();
-            api.addEventListener( 'viewerready', function() {
-                console.log( 'Viewer ready' );
-                statusDiv.innerText = "Model Ready. Press HEAR.";
-
-                api.addEventListener( 'annotationFocus', function( index ) {
-                    if(!audioUnlocked) return;
-
-                    // Tüm sesleri sustur
-                    sounds.forEach(function(s){ s.pause(); s.currentTime=0; });
-
-                    // İlgili sesi çal
-                    if(sounds[index]) {
-                        sounds[index].play().catch(function(e){ console.log(e); });
-                    }
-                });
-            } );
-        },
-        error: function() {
-            alert( 'Sketchfab Error: Model could not load.' );
-        },
-        autostart: 1,
-        ui_controls: 1,
-        ui_annotations: 1
-    } );
-</script>
-
-</body>
-</html>
-
+    client.init(
