@@ -21,29 +21,27 @@
         z-index: 99999;
         color: white;
         text-align: center;
-        transition: opacity 1s ease;
+        transition: opacity 0.8s ease;
     }
 
     h1 { font-size: 3rem; margin: 0 0 10px 0; letter-spacing: 2px; font-weight: 300; text-transform: uppercase; }
     h2 { font-size: 1.5rem; margin: 0 0 10px 0; color: #eee; font-weight: 500; letter-spacing: 1px; }
-    h3 { font-size: 1rem; margin: 0 0 40px 0; color: #e91e63; font-weight: 400; letter-spacing: 1px; } /* Email rengi pembe yapıldı */
+    h3 { font-size: 1rem; margin: 0 0 40px 0; color: #e91e63; font-weight: 400; letter-spacing: 1px; }
 
     /* PEMBE HEAR BUTONU */
     #btnHear {
         padding: 15px 60px; font-size: 24px; font-weight: bold;
-        background-color: #e91e63; /* Canlı Pembe */
-        color: white; border: none;
+        background-color: #e91e63; color: white; border: none;
         border-radius: 50px; cursor: pointer;
-        box-shadow: 0 0 20px rgba(233, 30, 99, 0.4); /* Pembe gölge */
+        box-shadow: 0 0 20px rgba(233, 30, 99, 0.4);
         transition: all 0.3s ease; letter-spacing: 1px;
     }
     #btnHear:hover { 
-        background-color: #ff4081; /* Üzerine gelince daha açık pembe */
-        transform: scale(1.05); 
+        background-color: #ff4081; transform: scale(1.05); 
         box-shadow: 0 0 30px rgba(255, 64, 129, 0.6); 
     }
 
-    #status { margin-top: 20px; font-size: 12px; color: #555; }
+    #status { margin-top: 20px; font-size: 12px; color: #777; }
 </style>
 </head>
 <body>
@@ -53,7 +51,7 @@
     <h2>Işıl Can</h2>
     <h3>Contact: isillccan@gmail.com</h3>
     <button id="btnHear">HEAR</button>
-    <div id="status">Experience loading...</div>
+    <div id="status">Click HEAR to start journey</div>
 </div>
 
 <iframe src="" id="viewer" allow="autoplay; fullscreen; vr" allowvr allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true"></iframe>
@@ -65,8 +63,7 @@
     var audioUnlocked = false;
     var sounds = [];
 
-    // === GÜNCELLENMİŞ SES DOSYALARI LİSTESİ (Kedi ve Konuşma çıkarıldı) ===
-    // Toplam 10 ses kaldı.
+    // === SES LİSTESİ ===
     var fileList = [
         "sounds/trafik.mp3",       // No 1
         "sounds/tramvay_ic.mp3",   // No 2
@@ -80,32 +77,72 @@
         "sounds/sahil.mp3"         // No 10
     ];
 
+    // Sesleri yükle (Hata olsa bile devam et)
     fileList.forEach(function(src) {
         var aud = new Audio(src);
         aud.loop = true;
         sounds.push(aud);
     });
 
-    // === HEAR BUTONU ===
+    // === GARANTİLİ BAŞLATMA (FORCE START) ===
     btn.onclick = function() {
-        statusDiv.innerText = "Starting...";
+        statusDiv.innerText = "Entering...";
+        
+        // Ses sistemini tetikle
         if(sounds[0]) {
             sounds[0].play().then(function() {
                 sounds[0].pause();
                 sounds[0].currentTime = 0;
                 audioUnlocked = true;
-                screen.style.opacity = "0";
-                setTimeout(function(){ screen.style.display = "none"; }, 1000);
             }).catch(function(err) {
-                alert("Ses Dosyası Hatası: " + err);
-                screen.style.display = "none";
+                console.log("Ses ön yükleme hatası (Önemli değil): " + err);
+            }).finally(function() {
+                // NE OLURSA OLSUN EKRANI KAPAT
+                girisEkraniniKapat();
             });
+        } else {
+            // Ses yoksa bile ekranı kapat
+            girisEkraniniKapat();
         }
     };
+
+    function girisEkraniniKapat() {
+        screen.style.opacity = "0";
+        setTimeout(function(){ 
+            screen.style.display = "none"; 
+        }, 800);
+    }
 
     // === SKETCHFAB ===
     var iframe = document.getElementById( 'viewer' );
     var uid = '35d9707a712d4da1a88d1e4f82da8797';
     var client = new Sketchfab( iframe );
 
-    client.init(
+    client.init( uid, {
+        success: function( api ) {
+            api.start();
+            api.addEventListener( 'viewerready', function() {
+                console.log('Model hazır.');
+                
+                api.addEventListener( 'annotationFocus', function( index ) {
+                    // Eğer kullanıcı butona basmadan bir şekilde girdiyse ses çalma
+                    // Ama artık butona basmak zorunlu olduğu için sorun yok.
+                    
+                    // Öncekileri sustur
+                    sounds.forEach(function(s){ s.pause(); s.currentTime=0; });
+
+                    // Yeniyi çal
+                    if(sounds[index]) {
+                        sounds[index].play().catch(e => console.log("Oynatma hatası:", e));
+                    }
+                });
+            } );
+        },
+        error: function() { 
+            console.log('Sketchfab yüklenemedi.');
+        },
+        autostart: 1, ui_controls: 1, ui_annotations: 1
+    } );
+</script>
+</body>
+</html>
